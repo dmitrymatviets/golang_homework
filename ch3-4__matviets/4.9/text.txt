@@ -1,0 +1,6 @@
+No Collections Operations
+It's 2015. Java and JavaScript have map and filter on collections. Go doesn't. This is stupid and wrong on its face.
+
+How wrong? Well, so insanely stupidly wrong that I have no idea what the Go designers were thinking.
+
+Didn't they spend, you know, 10 minutes with ANY OTHER LANGUAGE? map and filter are JUST WHAT YOU DO with collections.
