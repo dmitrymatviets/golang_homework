@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"go_customs/domain/models"
+	"golang_homework/ch5-7/go_customs/domain/models"
 )
 
 func main() {
@@ -17,54 +17,74 @@ func main() {
 	uk := domain.MakeCountry("Великобритания", domain.OnlyMarriedWomenCustomsPolicy{})
 	russia := domain.MakeCountry("Россия", domain.RegularCountryCustomsPolicy{})
 
+	test_singleWomanToUsa_fail(usa)
+	test_singleWomanToRussia_success(russia)
+	test_marriedWomanToUsa_success(usa)
+	test_fakeTicket_fail(uk)
+	test_ticketWithWrongName_fail(uk)
+}
+
+func test_singleWomanToUsa_fail(usa *domain.Country) {
 	annaSingle := domain.Passenger{IsFemale: true}
 	annaSingle.PickUpDocuments(
-		&domain.InternationalPassport{"123456780", "Anna Ivanova"},
+		&domain.InternationalPassport{"123456780", "Anna Nezamuzhnyaya"},
 		&domain.InternalPassport{Number: "1234560", IsMarried: false},
-		&domain.Ticket{"111111-22220", "Anna Ivanova", usa})
+		&domain.Ticket{"111111-22220", "Anna Nezamuzhnyaya", usa})
+	tryToPassCustoms(&annaSingle, false)
+}
 
-	tryToPassCustoms(&annaSingle)
+func test_singleWomanToRussia_success(russia *domain.Country) {
+	annaSingle := domain.Passenger{IsFemale: true}
+	annaSingle.PickUpDocuments(
+		&domain.InternationalPassport{"123456780", "Anna Nezamuzhnyaya"},
+		&domain.InternalPassport{Number: "1234560", IsMarried: false},
+		&domain.Ticket{"111111-22220", "Anna Nezamuzhnyaya", russia})
+	tryToPassCustoms(&annaSingle, true)
+}
 
-	annaSingle.ChangeTicket(&domain.Ticket{"111111-22220", "Anna Ivanova", russia})
-	tryToPassCustoms(&annaSingle)
-
+func test_marriedWomanToUsa_success(usa *domain.Country) {
 	olgaMarried := domain.Passenger{IsFemale: true}
 	olgaMarried.PickUpDocuments(
-		&domain.InternationalPassport{"123456781", "Olga Magomedova"},
+		&domain.InternationalPassport{"123456781", "Olga Zamuzhnyaya"},
 		&domain.InternalPassport{Number: "1234561", IsMarried: true},
-		&domain.Ticket{"111111-22221", "Olga Magomedova", usa})
+		&domain.Ticket{"111111-22221", "Olga Zamuzhnyaya", usa})
 
-	tryToPassCustoms(&olgaMarried)
+	tryToPassCustoms(&olgaMarried, true)
+}
 
+func test_fakeTicket_fail(uk *domain.Country) {
 	alexanderPetrovFakeTicket := domain.Passenger{IsFemale: false}
 	alexanderPetrovFakeTicket.PickUpDocuments(
-		&domain.InternationalPassport{"123456782", "Alexander Petrov"},
+		&domain.InternationalPassport{"123456782", "Alexander Shuler"},
 		&domain.InternalPassport{Number: "1234562", IsMarried: false},
-		&domain.Ticket{"111111-2", "Alexander Petrov", uk})
+		&domain.Ticket{"111111-2", "Alexander Shuler", uk})
 
-	tryToPassCustoms(&alexanderPetrovFakeTicket)
+	tryToPassCustoms(&alexanderPetrovFakeTicket, false)
+}
 
+func test_ticketWithWrongName_fail(uk *domain.Country) {
 	ruslanBoshirovSpy := domain.Passenger{IsFemale: false}
 	ruslanBoshirovSpy.PickUpDocuments(
 		&domain.InternationalPassport{"123456783", "Ruslan Boshirov"},
 		&domain.InternalPassport{Number: "1234563", IsMarried: false},
 		&domain.Ticket{"111111-22222", "Anatoly Chepiga", uk})
 
-	tryToPassCustoms(&ruslanBoshirovSpy)
-
-	ruslanBoshirovSpy.ChangeTicket(&domain.Ticket{"111111-22222", "Ruslan Boshirov", uk})
-	tryToPassCustoms(&ruslanBoshirovSpy)
+	tryToPassCustoms(&ruslanBoshirovSpy, false)
 }
 
-func tryToPassCustoms(passenger *domain.Passenger) {
+func tryToPassCustoms(passenger *domain.Passenger, result bool) {
 	if passenger == nil {
 		panic(fmt.Errorf("Не передан пассажир"))
 	}
 	country := passenger.GetDestinationCountry()
 	if country == nil {
-		fmt.Println("Отсутствует билет или страна в билете")
+		fmt.Println("Отсутствует билет или страна в билете", passenger.GetName())
 	}
 
 	ok, msg := country.CheckPassenger(passenger)
-	fmt.Printf("%v -> %v [%v] (%v)\r\n", passenger.GetName(), country.Name, ok, msg)
+	resultSymbol := "☓"
+	if ok == result {
+		resultSymbol = "✓"
+	}
+	fmt.Printf("%v %v -> %v [%v] (%v)\r\n", resultSymbol, passenger.GetName(), country.Name, ok, msg)
 }

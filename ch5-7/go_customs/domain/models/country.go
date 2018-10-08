@@ -49,7 +49,7 @@ func (policy OnlyMarriedWomenCustomsPolicy) CheckPassenger(p *Passenger) (bool, 
 		return ok, msg
 	}
 	_, internalPassport, _ := p.ShowDocuments()
-	if internalPassport != nil {
+	if internalPassport == nil {
 		return false, "Остутствует внутренний паспорт"
 	}
 	if len(internalPassport.Number) != 7 {
@@ -61,12 +61,12 @@ func (policy OnlyMarriedWomenCustomsPolicy) CheckPassenger(p *Passenger) (bool, 
 	return true, ""
 }
 
-type country struct {
+type Country struct {
 	ICountryCustomsPolicy
 	Name string
 }
 
-func MakeCountry(name string, customsPolicy ICountryCustomsPolicy) *country {
+func MakeCountry(name string, customsPolicy ICountryCustomsPolicy) *Country {
 	if customsPolicy == nil {
 		panic(fmt.Errorf("Не передан параметр customsPolicy"))
 	}
@@ -75,5 +75,5 @@ func MakeCountry(name string, customsPolicy ICountryCustomsPolicy) *country {
 		panic(fmt.Errorf("Не передан параметр name"))
 	}
 
-	return &country{customsPolicy, name}
+	return &Country{customsPolicy, name}
 }

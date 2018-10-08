@@ -13,7 +13,7 @@ type Passenger struct {
 	petSafetyDocument    *PetSafetyDocument
 }
 
-func (p *Passenger) GetDestinationCountry() *country {
+func (p *Passenger) GetDestinationCountry() *Country {
 	if p.ticket != nil {
 		return p.ticket.DestinationCountry
 	}
@@ -64,7 +64,7 @@ type InternalPassport struct {
 type Ticket struct {
 	Number             string
 	PassengerName      string
-	DestinationCountry *country
+	DestinationCountry *Country
 }
 
 type Pet struct {
