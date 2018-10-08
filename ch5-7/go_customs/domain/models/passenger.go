@@ -27,6 +27,10 @@ func (p *Passenger) GetName() string {
 	return ""
 }
 
+func (p *Passenger) HasPet() bool {
+	return p.pet != nil
+}
+
 func (p *Passenger) PickUpDocuments(internationalPassport *InternationalPassport, internalPassport *InternalPassport, ticket *Ticket) *Passenger {
 	p.internationalPassport = internationalPassport
 	p.internalPassport = internalPassport
@@ -51,38 +55,8 @@ func (p *Passenger) PickUpPet(pet *Pet, petPassport *PetPassport, petOwnershipDo
 	return p
 }
 
-type InternationalPassport struct {
-	Number string
-	Name   string
-}
-
-type InternalPassport struct {
-	Number    string
-	IsMarried bool
-}
-
-type Ticket struct {
-	Number             string
-	PassengerName      string
-	DestinationCountry *Country
-}
-
 type Pet struct {
+	kind     string
 	weightKg int
 	chipId   int
-}
-
-type PetPassport struct {
-	number int
-	chipId int
-}
-
-type PetOwnershipDocument struct {
-	number int
-	chipId int
-}
-
-type PetSafetyDocument struct {
-	number int
-	chipId int
 }
