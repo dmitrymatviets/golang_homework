@@ -17,16 +17,16 @@ type Ticket struct {
 }
 
 type PetPassport struct {
-	number int
-	chipId int
+	Number string
+	ChipId string
 }
 
 type PetOwnershipDocument struct {
-	number int
-	chipId int
+	Number string
+	ChipId string
 }
 
 type PetSafetyDocument struct {
-	number int
-	chipId int
+	Number string
+	ChipId string
 }

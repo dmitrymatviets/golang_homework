@@ -33,6 +33,46 @@ func commonCheckPassenger(p *Passenger) (bool, string) {
 		return false, "Не совпадают имена на билете и паспорте"
 	}
 
+	if p.HasPet() {
+		pet, petPassport, petOwnershipDocument, petSafetyDocument := p.ShowPet()
+
+		if petOwnershipDocument == nil {
+			return false, "Отсутствует документ о праве собственности над животным"
+		}
+		if petPassport == nil {
+			return false, "Отсутствует паспорт животного"
+		}
+		if len(petOwnershipDocument.Number) < 5 {
+			return false, "Недействительный документ о праве собственности над животным"
+		}
+
+		if len(petPassport.Number) < 5 {
+			return false, "Недействительный паспорт животного"
+		}
+
+		if pet.ChipId != petPassport.ChipId {
+			return false, "Не совпадает чип животного с паспортом"
+		}
+
+		if pet.ChipId != petOwnershipDocument.ChipId {
+			return false, "Не совпадает чип животного с документом о праве собственности над животным"
+		}
+
+		if pet.WeightKg >= 40 {
+			if petSafetyDocument == nil {
+				return false, "Нет документа о безопасности животного с весом > 40кг"
+			}
+
+			if len(petSafetyDocument.Number) < 5 {
+				return false, "Недействительный документ о безопасности животного"
+			}
+
+			if pet.ChipId != petSafetyDocument.ChipId {
+				return false, "Не совпадает чип животного с документом о безопасности животного"
+			}
+		}
+	}
+
 	return true, ""
 }
 
@@ -62,8 +102,8 @@ func (policy OnlyMarriedWomenCustomsPolicy) CheckPassenger(p *Passenger) (bool, 
 }
 
 type Country struct {
-	ICountryCustomsPolicy
-	Name string
+	Policy ICountryCustomsPolicy
+	Name   string
 }
 
 func MakeCountry(name string, customsPolicy ICountryCustomsPolicy) *Country {
