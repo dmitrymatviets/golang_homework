@@ -2,10 +2,10 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"golang_homework/ch5-7/go_customs/model"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 )
 
@@ -34,7 +34,7 @@ func StartHttpServer(service model.ICheckinService, port string, countryRegistry
 
 	go func() {
 		if err := srv.ListenAndServe(); err != nil {
-			log.Printf("Httpserver: ListenAndServe() error: %s", err)
+			panic(fmt.Errorf("Httpserver: ListenAndServe() error: %s", err))
 		}
 	}()
 

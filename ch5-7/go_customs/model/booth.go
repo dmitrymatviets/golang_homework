@@ -55,5 +55,5 @@ func (budka AutoBudka) CheckPassenger(p *Passenger) (bool, string) {
 		return false, "Не найдена запись о регистрации для электронного ваучера " + voucher
 	}
 
-	return true, voucher
+	return true, "Использован электронный ваучер " + voucher
 }
