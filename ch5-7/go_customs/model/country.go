@@ -1,13 +1,13 @@
-package domain
+package model
 
 import (
-	"fmt"
 	"strings"
 )
 
 type ICountryCustomsPolicy interface {
 	CheckPassenger(p *Passenger) (bool, string)
 }
+
 type RegularCountryCustomsPolicy struct {
 }
 
@@ -102,18 +102,7 @@ func (policy OnlyMarriedWomenCustomsPolicy) CheckPassenger(p *Passenger) (bool, 
 }
 
 type Country struct {
-	Policy ICountryCustomsPolicy
 	Name   string
-}
-
-func MakeCountry(name string, customsPolicy ICountryCustomsPolicy) *Country {
-	if customsPolicy == nil {
-		panic(fmt.Errorf("Не передан параметр customsPolicy"))
-	}
-
-	if name == "" {
-		panic(fmt.Errorf("Не передан параметр name"))
-	}
-
-	return &Country{customsPolicy, name}
+	Code   string
+	Policy ICountryCustomsPolicy `json:"-"`
 }

@@ -1,6 +1,6 @@
-package domain
+package model
 
-type Budka interface {
+type IBudka interface {
 	CheckPassenger(p *Passenger) (bool, string)
 }
 
@@ -19,7 +19,6 @@ func baseCheckPassenger(p *Passenger) (bool, string) {
 }
 
 func (budka BabkaBudka) CheckPassenger(p *Passenger) (bool, string) {
-
 	if p.HasPet() {
 		return false, "Сходи к детке с животным!"
 	}
@@ -35,7 +34,7 @@ func (budka DetkaBudka) CheckPassenger(p *Passenger) (bool, string) {
 }
 
 type AutoBudka struct {
-	Service *ECustomsService
+	Service ICheckinService
 }
 
 func (budka AutoBudka) CheckPassenger(p *Passenger) (bool, string) {
@@ -45,6 +44,10 @@ func (budka AutoBudka) CheckPassenger(p *Passenger) (bool, string) {
 	}
 
 	voucher := p.ShowERegVoucher()
+
+	if voucher == "" {
+		return false, "Отсутствует электронный ваучер"
+	}
 
 	ok := budka.Service.CheckTicket(p.AsERegModel(), voucher)
 

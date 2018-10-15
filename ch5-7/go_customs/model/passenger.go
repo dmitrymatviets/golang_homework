@@ -1,7 +1,4 @@
-package domain
-
-type IPassenger interface {
-}
+package model
 
 type Passenger struct {
 	IsFemale bool
@@ -73,13 +70,13 @@ func (p *Passenger) ShowPet() (*Pet, *PetPassport, *PetOwnershipDocument, *PetSa
 	return p.pet, p.petPassport, p.petOwnershipDocument, p.petSafetyDocument
 }
 
-func (p *Passenger) AsERegModel() *ECustomsServiceRequestModel {
-	return &ECustomsServiceRequestModel{
-		p.IsFemale,
-		p.internationalPassport,
-		p.internalPassport,
-		p.ticket,
-		p.pet}
+func (p *Passenger) AsERegModel() *CheckinServiceRequestModel {
+	return &CheckinServiceRequestModel{
+		IsFemale:              p.IsFemale,
+		InternationalPassport: p.internationalPassport,
+		InternalPassport:      p.internalPassport,
+		Ticket:                p.ticket,
+		Pet:                   p.pet}
 }
 
 type Pet struct {

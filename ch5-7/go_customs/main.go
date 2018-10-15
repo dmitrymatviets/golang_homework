@@ -2,10 +2,47 @@ package main
 
 import (
 	"fmt"
-	"golang_homework/ch5-7/go_customs/domain"
+	"golang_homework/ch5-7/go_customs/api"
+	"golang_homework/ch5-7/go_customs/model"
+	"golang_homework/ch5-7/go_customs/service"
+	"net/http"
 )
 
+const (
+	usa    = "usa"
+	uk     = "uk"
+	russia = "russia"
+)
+
+var (
+	countriesRegistry map[string]*model.Country
+
+	babkaBudka *model.BabkaBudka
+	detkaBudka *model.DetkaBudka
+	autoBudka  *model.AutoBudka
+
+	srv              *http.Server
+	checkinService   model.ICheckinService
+	gosUslugiService *service.GosuslugiService
+)
+
+func init() {
+	countriesRegistry = map[string]*model.Country{
+		usa:    {Name: "США", Code: usa, Policy: model.OnlyMarriedWomenCustomsPolicy{}},
+		uk:     {Name: "Великобритания", Code: uk, Policy: model.OnlyMarriedWomenCustomsPolicy{}},
+		russia: {Name: "Россия", Code: russia, Policy: model.RegularCountryCustomsPolicy{}}}
+
+	babkaBudka = &model.BabkaBudka{}
+	detkaBudka = &model.DetkaBudka{}
+	checkinService = &service.CheckinService{Registry: make(map[string]*model.CheckinServiceRequestModel)}
+	autoBudka = &model.AutoBudka{Service: checkinService}
+	srv = api.StartHttpServer(checkinService, API_PORT, countriesRegistry)
+
+	gosUslugiService = &service.GosuslugiService{Server: srv, Port: API_PORT}
+}
+
 func main() {
+	defer srv.Shutdown(nil)
 
 	test_babkaBudkaWorks_success()
 	test_detkaBudkaWorks_success()
@@ -27,237 +64,206 @@ func main() {
 	test_autoBudkaWithEReg_success()
 	test_autoBudkaWithFakeEReg_fail()
 	test_autoBudkaWithPetEReg_fail()
-
-}
-
-func prepare() (*domain.Country, *domain.Country, *domain.Country, *domain.BabkaBudka, *domain.DetkaBudka) {
-	usa := domain.MakeCountry("США", domain.OnlyMarriedWomenCustomsPolicy{})
-	uk := domain.MakeCountry("Великобритания", domain.OnlyMarriedWomenCustomsPolicy{})
-	russia := domain.MakeCountry("Россия", domain.RegularCountryCustomsPolicy{})
-	babkaBudka := &domain.BabkaBudka{}
-	detkaBudka := &domain.DetkaBudka{}
-	return usa, uk, russia, babkaBudka, detkaBudka
 }
 
 func test_singleWomanToUsa_fail() {
-	usa, _, _, babkaBudka, _ := prepare()
 
-	annaSingle := domain.Passenger{IsFemale: true}
+	annaSingle := model.Passenger{IsFemale: true}
 	annaSingle.PickUpDocuments(
-		&domain.InternationalPassport{"123456780", "Anna Nezamuzhnyaya"},
-		&domain.InternalPassport{Number: "1234560", IsMarried: false},
-		&domain.Ticket{"111111-22220", "Anna Nezamuzhnyaya", usa})
+		&model.InternationalPassport{Number: "123456780", Name: "Anna Nezamuzhnyaya"},
+		&model.InternalPassport{Number: "1234560", IsMarried: false},
+		&model.Ticket{Number: "111111-22220", PassengerName: "Anna Nezamuzhnyaya", DestinationCountry: countriesRegistry[usa]})
 
 	tryToPassCustoms(&annaSingle, babkaBudka, false)
 }
 
 func test_singleWomanToRussia_success() {
-	_, _, russia, babkaBudka, _ := prepare()
 
-	annaSingle := domain.Passenger{IsFemale: true}
+	annaSingle := model.Passenger{IsFemale: true}
 	annaSingle.PickUpDocuments(
-		&domain.InternationalPassport{"123456780", "Anna Nezamuzhnyaya"},
-		&domain.InternalPassport{Number: "1234560", IsMarried: false},
-		&domain.Ticket{"111111-22220", "Anna Nezamuzhnyaya", russia})
+		&model.InternationalPassport{Number: "123456780", Name: "Anna Nezamuzhnyaya"},
+		&model.InternalPassport{Number: "1234560", IsMarried: false},
+		&model.Ticket{Number: "111111-22220", PassengerName: "Anna Nezamuzhnyaya", DestinationCountry: countriesRegistry[russia]})
 
 	tryToPassCustoms(&annaSingle, babkaBudka, true)
 }
 
 func test_marriedWomanToUsa_success() {
-	usa, _, _, babkaBudka, _ := prepare()
 
-	olgaMarried := domain.Passenger{IsFemale: true}
+	olgaMarried := model.Passenger{IsFemale: true}
 	olgaMarried.PickUpDocuments(
-		&domain.InternationalPassport{"123456781", "Olga Zamuzhnyaya"},
-		&domain.InternalPassport{Number: "1234561", IsMarried: true},
-		&domain.Ticket{"111111-22221", "Olga Zamuzhnyaya", usa})
+		&model.InternationalPassport{Number: "123456781", Name: "Olga Zamuzhnyaya"},
+		&model.InternalPassport{Number: "1234561", IsMarried: true},
+		&model.Ticket{Number: "111111-22221", PassengerName: "Olga Zamuzhnyaya", DestinationCountry: countriesRegistry[usa]})
 
 	tryToPassCustoms(&olgaMarried, babkaBudka, true)
 }
 
 func test_fakeTicket_fail() {
-	_, uk, _, babkaBudka, _ := prepare()
 
-	alexanderPetrovFakeTicket := domain.Passenger{IsFemale: false}
+	alexanderPetrovFakeTicket := model.Passenger{IsFemale: false}
 	alexanderPetrovFakeTicket.PickUpDocuments(
-		&domain.InternationalPassport{"123456782", "Alexander Shuler"},
-		&domain.InternalPassport{Number: "1234562", IsMarried: false},
-		&domain.Ticket{"111111-2", "Alexander Shuler", uk})
+		&model.InternationalPassport{Number: "123456782", Name: "Alexander Shuler"},
+		&model.InternalPassport{Number: "1234562", IsMarried: false},
+		&model.Ticket{Number: "111111-2", PassengerName: "Alexander Shuler", DestinationCountry: countriesRegistry[uk]})
 
 	tryToPassCustoms(&alexanderPetrovFakeTicket, babkaBudka, false)
 }
 
 func test_ticketWithWrongName_fail() {
-	_, uk, _, babkaBudka, _ := prepare()
 
-	ruslanBoshirovSpy := domain.Passenger{IsFemale: false}
+	ruslanBoshirovSpy := model.Passenger{IsFemale: false}
 	ruslanBoshirovSpy.PickUpDocuments(
-		&domain.InternationalPassport{"123456783", "Ruslan Boshirov"},
-		&domain.InternalPassport{Number: "1234563", IsMarried: false},
-		&domain.Ticket{"111111-22222", "Anatoly Chepiga", uk})
+		&model.InternationalPassport{Number: "123456783", Name: "Ruslan Boshirov"},
+		&model.InternalPassport{Number: "1234563", IsMarried: false},
+		&model.Ticket{Number: "111111-22222", PassengerName: "Anatoly Chepiga", DestinationCountry: countriesRegistry[uk]})
 
 	tryToPassCustoms(&ruslanBoshirovSpy, babkaBudka, false)
 }
 
 func test_babkaBudkaWorks_success() {
-	_, _, russia, babkaBudka, _ := prepare()
 
-	annaSingle := domain.Passenger{IsFemale: true}
+	annaSingle := model.Passenger{IsFemale: true}
 	annaSingle.PickUpDocuments(
-		&domain.InternationalPassport{"123456780", "Anna Normalnaya"},
-		&domain.InternalPassport{Number: "1234560", IsMarried: true},
-		&domain.Ticket{"111111-22220", "Anna Normalnaya", russia})
+		&model.InternationalPassport{Number: "123456780", Name: "Anna Normalnaya"},
+		&model.InternalPassport{Number: "1234560", IsMarried: true},
+		&model.Ticket{Number: "111111-22220", PassengerName: "Anna Normalnaya", DestinationCountry: countriesRegistry[russia]})
 
 	tryToPassCustoms(&annaSingle, babkaBudka, true)
 }
 
 func test_detkaBudkaWorks_success() {
-	_, _, russia, _, detkaBudka := prepare()
 
-	annaSingle := domain.Passenger{IsFemale: true}
+	annaSingle := model.Passenger{IsFemale: true}
 	annaSingle.PickUpDocuments(
-		&domain.InternationalPassport{"123456780", "Anna Normalnaya"},
-		&domain.InternalPassport{Number: "1234560", IsMarried: true},
-		&domain.Ticket{"111111-22220", "Anna Normalnaya", russia})
+		&model.InternationalPassport{Number: "123456780", Name: "Anna Normalnaya"},
+		&model.InternalPassport{Number: "1234560", IsMarried: true},
+		&model.Ticket{Number: "111111-22220", PassengerName: "Anna Normalnaya", DestinationCountry: countriesRegistry[russia]})
 
 	tryToPassCustoms(&annaSingle, detkaBudka, true)
 }
 
 func test_babkaBudkaPetWithDoc_fail() {
-	_, _, russia, babkaBudka, _ := prepare()
 
-	annaPet := domain.Passenger{IsFemale: true}
+	annaPet := model.Passenger{IsFemale: true}
 
 	annaPet.PickUpDocuments(
-		&domain.InternationalPassport{"123456780", "Anna Doglover"},
-		&domain.InternalPassport{Number: "1234560", IsMarried: true},
-		&domain.Ticket{"111111-22220", "Anna Doglover", russia})
+		&model.InternationalPassport{Number: "123456780", Name: "Anna Doglover"},
+		&model.InternalPassport{Number: "1234560", IsMarried: true},
+		&model.Ticket{Number: "111111-22220", PassengerName: "Anna Doglover", DestinationCountry: countriesRegistry[russia]})
 
 	annaPet.PickUpPet(
-		&domain.Pet{"sobaka", 10, "1234"},
-		&domain.PetPassport{"123456", "1234"},
-		&domain.PetOwnershipDocument{"123456", "1234"},
-		&domain.PetSafetyDocument{"123456", "1234"})
+		&model.Pet{Kind: "sobaka", WeightKg: 10, ChipId: "1234"},
+		&model.PetPassport{Number: "123456", ChipId: "1234"},
+		&model.PetOwnershipDocument{Number: "123456", ChipId: "1234"},
+		&model.PetSafetyDocument{Number: "123456", ChipId: "1234"})
 
 	tryToPassCustoms(&annaPet, babkaBudka, false)
 }
 
 func test_detkaBudkaPetWithDoc_success() {
-	_, _, russia, _, detkaBudka := prepare()
 
-	annaPet := domain.Passenger{IsFemale: true}
+	annaPet := model.Passenger{IsFemale: true}
 	annaPet.PickUpDocuments(
-		&domain.InternationalPassport{"123456780", "Anna Doglover"},
-		&domain.InternalPassport{Number: "1234560", IsMarried: true},
-		&domain.Ticket{"111111-22220", "Anna Doglover", russia})
+		&model.InternationalPassport{Number: "123456780", Name: "Anna Doglover"},
+		&model.InternalPassport{Number: "1234560", IsMarried: true},
+		&model.Ticket{Number: "111111-22220", PassengerName: "Anna Doglover", DestinationCountry: countriesRegistry[russia]})
 
 	annaPet.PickUpPet(
-		&domain.Pet{"sobaka", 10, "1234"},
-		&domain.PetPassport{"123456", "1234"},
-		&domain.PetOwnershipDocument{"123456", "1234"},
-		&domain.PetSafetyDocument{"123456", "1234"})
+		&model.Pet{Kind: "sobaka", WeightKg: 10, ChipId: "1234"},
+		&model.PetPassport{Number: "123456", ChipId: "1234"},
+		&model.PetOwnershipDocument{Number: "123456", ChipId: "1234"},
+		&model.PetSafetyDocument{Number: "123456", ChipId: "1234"})
 	tryToPassCustoms(&annaPet, detkaBudka, true)
 }
 
 func test_detkaBudkaPetWithoutPassport_fail() {
-	_, _, russia, _, detkaBudka := prepare()
 
-	annaPet := domain.Passenger{IsFemale: true}
+	annaPet := model.Passenger{IsFemale: true}
 	annaPet.PickUpDocuments(
-		&domain.InternationalPassport{"123456780", "Anna Doglover-NoPassport"},
-		&domain.InternalPassport{Number: "1234560", IsMarried: true},
-		&domain.Ticket{"111111-22220", "Anna Doglover-NoPassport", russia})
+		&model.InternationalPassport{Number: "123456780", Name: "Anna Doglover-NoPassport"},
+		&model.InternalPassport{Number: "1234560", IsMarried: true},
+		&model.Ticket{Number: "111111-22220", PassengerName: "Anna Doglover-NoPassport", DestinationCountry: countriesRegistry[russia]})
 
 	annaPet.PickUpPet(
-		&domain.Pet{"sobaka", 10, "1234"},
+		&model.Pet{Kind: "sobaka", WeightKg: 10, ChipId: "1234"},
 		nil,
-		&domain.PetOwnershipDocument{"123456", "1234"},
-		&domain.PetSafetyDocument{"123456", "1234"})
+		&model.PetOwnershipDocument{Number: "123456", ChipId: "1234"},
+		&model.PetSafetyDocument{Number: "123456", ChipId: "1234"})
 	tryToPassCustoms(&annaPet, detkaBudka, false)
 }
 
 func test_detkaBudkaPetWithoutOwnershipDoc_fail() {
-	_, _, russia, _, detkaBudka := prepare()
 
-	annaPet := domain.Passenger{IsFemale: true}
+	annaPet := model.Passenger{IsFemale: true}
 	annaPet.PickUpDocuments(
-		&domain.InternationalPassport{"123456780", "Anna Doglover-NoOwnership"},
-		&domain.InternalPassport{Number: "1234560", IsMarried: true},
-		&domain.Ticket{"111111-22220", "Anna Doglover-NoOwnership", russia})
+		&model.InternationalPassport{Number: "123456780", Name: "Anna Doglover-NoOwnership"},
+		&model.InternalPassport{Number: "1234560", IsMarried: true},
+		&model.Ticket{Number: "111111-22220", PassengerName: "Anna Doglover-NoOwnership", DestinationCountry: countriesRegistry[russia]})
 
 	annaPet.PickUpPet(
-		&domain.Pet{"sobaka", 10, "1234"},
-		&domain.PetPassport{"123456", "1234"},
+		&model.Pet{Kind: "sobaka", WeightKg: 10, ChipId: "1234"},
+		&model.PetPassport{Number: "123456", ChipId: "1234"},
 		nil,
-		&domain.PetSafetyDocument{"123456", "1234"})
+		&model.PetSafetyDocument{Number: "123456", ChipId: "1234"})
 
 	tryToPassCustoms(&annaPet, detkaBudka, false)
 }
 
 func test_detkaBudkaHeavyPetNoSafetyDoc_fail() {
-	_, _, russia, _, detkaBudka := prepare()
 
-	annaPet := domain.Passenger{IsFemale: true}
+	annaPet := model.Passenger{IsFemale: true}
 	annaPet.PickUpDocuments(
-		&domain.InternationalPassport{"123456780", "Anna HeavyDoglover-NotSafe"},
-		&domain.InternalPassport{Number: "1234560", IsMarried: true},
-		&domain.Ticket{"111111-22220", "Anna HeavyDoglover-NotSafe", russia})
+		&model.InternationalPassport{Number: "123456780", Name: "Anna HeavyDoglover-NotSafe"},
+		&model.InternalPassport{Number: "1234560", IsMarried: true},
+		&model.Ticket{Number: "111111-22220", PassengerName: "Anna HeavyDoglover-NotSafe", DestinationCountry: countriesRegistry[russia]})
 
 	annaPet.PickUpPet(
-		&domain.Pet{"sobaka", 55, "1234"},
-		&domain.PetPassport{"123456", "1234"},
-		&domain.PetOwnershipDocument{"123456", "1234"},
+		&model.Pet{Kind: "sobaka", WeightKg: 55, ChipId: "1234"},
+		&model.PetPassport{Number: "123456", ChipId: "1234"},
+		&model.PetOwnershipDocument{Number: "123456", ChipId: "1234"},
 		nil)
 
 	tryToPassCustoms(&annaPet, detkaBudka, false)
 }
 
 func test_detkaBudkaHeavyPetWithSafetyDoc_success() {
-	_, _, russia, _, detkaBudka := prepare()
 
-	annaPet := domain.Passenger{IsFemale: true}
+	annaPet := model.Passenger{IsFemale: true}
 	annaPet.PickUpDocuments(
-		&domain.InternationalPassport{"123456780", "Anna HeavyDoglover-Safe"},
-		&domain.InternalPassport{Number: "1234560", IsMarried: true},
-		&domain.Ticket{"111111-22220", "Anna HeavyDoglover-Safe", russia})
+		&model.InternationalPassport{Number: "123456780", Name: "Anna HeavyDoglover-Safe"},
+		&model.InternalPassport{Number: "1234560", IsMarried: true},
+		&model.Ticket{Number: "111111-22220", PassengerName: "Anna HeavyDoglover-Safe", DestinationCountry: countriesRegistry[russia]})
 
 	annaPet.PickUpPet(
-		&domain.Pet{"sobaka", 55, "1234"},
-		&domain.PetPassport{"123456", "1234"},
-		&domain.PetOwnershipDocument{"123456", "1234"},
-		&domain.PetSafetyDocument{"123456", "1234"})
+		&model.Pet{Kind: "sobaka", WeightKg: 55, ChipId: "1234"},
+		&model.PetPassport{Number: "123456", ChipId: "1234"},
+		&model.PetOwnershipDocument{Number: "123456", ChipId: "1234"},
+		&model.PetSafetyDocument{Number: "123456", ChipId: "1234"})
 
 	tryToPassCustoms(&annaPet, detkaBudka, true)
 }
 
 func test_autoBudkaWithEReg_success() {
-	_, _, russia, _, _ := prepare()
 
-	eCustomsService := &domain.ECustomsService{make(map[string]*domain.ECustomsServiceRequestModel)}
-	autoBudka := &domain.AutoBudka{eCustomsService}
-
-	annaSingle := domain.Passenger{IsFemale: true}
+	annaSingle := model.Passenger{IsFemale: true}
 	annaSingle.PickUpDocuments(
-		&domain.InternationalPassport{"123456780", "Anna Elektronnaya"},
-		&domain.InternalPassport{Number: "1234560", IsMarried: false},
-		&domain.Ticket{"111111-22220", "Anna Elektronnaya", russia})
+		&model.InternationalPassport{Number: "123456780", Name: "Anna Elektronnaya"},
+		&model.InternalPassport{Number: "1234560", IsMarried: false},
+		&model.Ticket{Number: "111111-22220", PassengerName: "Anna Elektronnaya", DestinationCountry: countriesRegistry[russia]})
 
-	annaSingle.PickERegVoucher(eCustomsService.GetTicket(annaSingle.AsERegModel()))
+	annaSingle.PickERegVoucher(gosUslugiService.GetTicket(annaSingle.AsERegModel()))
 
 	tryToPassCustoms(&annaSingle, autoBudka, true)
 }
 
 func test_autoBudkaWithFakeEReg_fail() {
-	_, _, russia, _, _ := prepare()
 
-	eCustomsService := &domain.ECustomsService{make(map[string]*domain.ECustomsServiceRequestModel)}
-	autoBudka := &domain.AutoBudka{eCustomsService}
-
-	annaSingle := domain.Passenger{IsFemale: true}
+	annaSingle := model.Passenger{IsFemale: true}
 	annaSingle.PickUpDocuments(
-		&domain.InternationalPassport{"123456780", "Anna Elektronnaya"},
-		&domain.InternalPassport{Number: "1234560", IsMarried: false},
-		&domain.Ticket{"111111-22220", "Anna Elektronnaya", russia})
+		&model.InternationalPassport{Number: "123456780", Name: "Anna Elektronnaya-Fake"},
+		&model.InternalPassport{Number: "1234560", IsMarried: false},
+		&model.Ticket{Number: "111111-22220", PassengerName: "Anna Elektronnaya-Fake", DestinationCountry: countriesRegistry[russia]})
 
 	annaSingle.PickERegVoucher("12345678")
 
@@ -265,38 +271,34 @@ func test_autoBudkaWithFakeEReg_fail() {
 }
 
 func test_autoBudkaWithPetEReg_fail() {
-	_, _, russia, _, _ := prepare()
 
-	eCustomsService := &domain.ECustomsService{make(map[string]*domain.ECustomsServiceRequestModel)}
-	autoBudka := &domain.AutoBudka{eCustomsService}
-
-	annaSingle := domain.Passenger{IsFemale: true}
+	annaSingle := model.Passenger{IsFemale: true}
 	annaSingle.PickUpDocuments(
-		&domain.InternationalPassport{"123456780", "Anna Elektronnaya-Pet"},
-		&domain.InternalPassport{Number: "1234560", IsMarried: false},
-		&domain.Ticket{"111111-22220", "Anna Elektronnaya-Pet", russia})
+		&model.InternationalPassport{Number: "123456780", Name: "Anna Elektronnaya-Pet"},
+		&model.InternalPassport{Number: "1234560", IsMarried: false},
+		&model.Ticket{Number: "111111-22220", PassengerName: "Anna Elektronnaya-Pet", DestinationCountry: countriesRegistry[russia]})
 
 	annaSingle.PickUpPet(
-		&domain.Pet{"sobaka", 55, "1234"},
-		&domain.PetPassport{"123456", "1234"},
-		&domain.PetOwnershipDocument{"123456", "1234"},
-		&domain.PetSafetyDocument{"123456", "1234"})
+		&model.Pet{Kind: "sobaka", WeightKg: 55, ChipId: "1234"},
+		&model.PetPassport{Number: "123456", ChipId: "1234"},
+		&model.PetOwnershipDocument{Number: "123456", ChipId: "1234"},
+		&model.PetSafetyDocument{Number: "123456", ChipId: "1234"})
 
-	annaSingle.PickERegVoucher(eCustomsService.GetTicket(annaSingle.AsERegModel()))
+	annaSingle.PickERegVoucher(gosUslugiService.GetTicket(annaSingle.AsERegModel()))
 
 	tryToPassCustoms(&annaSingle, autoBudka, false)
 }
 
-func tryToPassCustoms(passenger *domain.Passenger, budka domain.Budka, result bool) {
+func tryToPassCustoms(passenger *model.Passenger, budka model.IBudka, expectedResult bool) {
 	if passenger == nil {
 		panic(fmt.Errorf("Не передан пассажир"))
 	}
 
 	ok, msg := budka.CheckPassenger(passenger)
 	resultSymbol := "☓"
-	if ok == result {
+	if ok == expectedResult {
 		resultSymbol = "✓"
 	}
 
-	fmt.Printf("[%v] %v: %v -> %v [%v] (%v)\r\n", resultSymbol, fmt.Sprintf("%T", budka), passenger.GetName(), *passenger.GetDestinationCountry(), ok, msg)
+	fmt.Printf("[%v] %v: %v -> %v [%v] (%v)\r\n", resultSymbol, fmt.Sprintf("%T", budka), passenger.GetName(), passenger.GetDestinationCountry().Name, ok, msg)
 }
