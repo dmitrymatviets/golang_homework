@@ -18,6 +18,7 @@ type Worker struct {
 }
 
 const filePath = "./ch5-7/practice/exercise/json/json.json"
+const dbPath = "./ch5-7/practice/exercise/json/db.db"
 
 func main() {
 	db, err := connect()
@@ -70,7 +71,8 @@ func getWorkersFromJson() []Worker {
 }
 
 func connect() (*sql.DB, error) {
-	db, err := sql.Open("sqlite3", "./db.db")
+	dbPath, _ := filepath.Abs(dbPath)
+	db, err := sql.Open("sqlite3", dbPath)
 	if err != nil {
 		panic(err)
 	}
