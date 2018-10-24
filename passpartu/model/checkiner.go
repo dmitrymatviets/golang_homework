@@ -49,7 +49,18 @@ func checkin(passenger Passenger) (*Pass, error) {
 		if !basePassport.GetMarried() {
 			return nil, fmt.Errorf("bb go home")
 		}
+	}
 
+	for i, pet := range ticket.Pets {
+		if pet.Passport == nil {
+			return nil, fmt.Errorf("no Passport for animal #%v", i)
+		}
+		if pet.OwnershipCertificate == nil {
+			return nil, fmt.Errorf("no OwnershipCertificate for animal #%v", i)
+		}
+		if pet.Weight > 40 && pet.SafetyCertificate == nil {
+			return nil, fmt.Errorf("no SafetyCertificate for heavy animal #%v", i)
+		}
 	}
 
 	return &Pass{
