@@ -5,6 +5,8 @@ import (
 	"time"
 )
 
+var passRegistry = make(map[string]string)
+
 type CheckIner interface {
 	CheckIn(passenger Passenger) (*Pass, error)
 }
@@ -93,4 +95,23 @@ type Detka struct{}
 
 func (d *Detka) CheckIn(passenger Passenger) (*Pass, error) {
 	return CheckInPassangerWithAnimal(passenger)
+}
+
+type NanoBudka struct{}
+
+func (d *NanoBudka) CheckIn(passenger Passenger) (*Pass, error) {
+	pass := passenger.GetPass()
+
+	if pass == nil {
+		return nil, fmt.Errorf("No electonic pass")
+	}
+
+	if passRegistry[pass.ID] != passenger.GetTicket().ID {
+		return nil, fmt.Errorf("Fake electonic pass")
+	}
+
+	return pass, nil
+}
+
+type GosuslugiApi struct {
 }

@@ -3,9 +3,19 @@ package model
 type Passenger interface {
 	GetDocuments() []interface{}
 	GetTicket() *Ticket
+	GetPass() *Pass
+}
+
+type ETicketHolder struct {
+	Pass *Pass
+}
+
+func (me *ETicketHolder) GetPass() *Pass {
+	return me.Pass
 }
 
 type American struct {
+	ETicketHolder
 	Passport *AmericanPassport
 	Ticket   *Ticket
 }
@@ -19,6 +29,7 @@ func (a *American) GetTicket() *Ticket {
 }
 
 type Russian struct {
+	ETicketHolder
 	BasePassport          *RussianBasePassport
 	InternationalPassport *RussianInternationalPassport
 	Ticket                *Ticket
