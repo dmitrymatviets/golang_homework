@@ -1,8 +1,8 @@
 package main
 
 import (
-	"golang_homework/passpartu/model"
 	"fmt"
+	"golang_homework/passpartu/model"
 	"log"
 )
 
@@ -11,23 +11,19 @@ const (
 	GatewayA = "A"
 	// "detka"
 	GatewayB = "B"
-	//
-	OnlineTerminal = "Online"
 )
 
 func main() {
 
 	b1 := &model.Budka{}
 	b2 := &model.Budka{}
-	b3 := &model.Budka{}
 	b1.Register(&model.Babka{})
 	b2.Register(&model.Detka{})
-	b3.Register(&model.OnlineOperator{})
 
 	eais := model.NewEAISPC()
 	eais.RegisterBudka(b1, GatewayA)
 	eais.RegisterBudka(b2, GatewayB)
-	eais.RegisterBudka(b3, OnlineTerminal)
+
 	//@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@//
 
 	ticket1 := new(model.Ticket)
@@ -74,7 +70,7 @@ func main() {
 	}
 	dog.SafetyCertificate = &model.SafetyCertificate{}
 	dog.Passport = &model.AnimalPassport{}
-	dog.Weight = 41
+	dog.Weight = 39
 
 	ticket2.Pets = make([]*model.Animal, 0)
 	ticket2.Pets = append(ticket1.Pets, dog)
@@ -82,7 +78,6 @@ func main() {
 
 	gw1 := eais.Budkas[GatewayA]
 	gw2 := eais.Budkas[GatewayB]
-	ot := eais.Budkas[OnlineTerminal]
 
 	pass, err := gw1.CheckIn(lonelyMan)
 	if err != nil {
@@ -100,14 +95,6 @@ func main() {
 		log.Println(fmt.Sprintf("Welcome to board with pass: %s", pass.ID))
 	}
 
-	pass, err = ot.CheckIn(lonelyMan)
-	if err != nil {
-		log.Println(fmt.Sprintf("Checkin error: %s", err.Error()))
-
-	} else {
-		log.Println(fmt.Sprintf("Welcome to board with pass: %s", pass.ID))
-	}
-
 	pass, err = gw1.CheckIn(womanWithDogs)
 	if err != nil {
 		log.Println(fmt.Sprintf("Checkin error: %s", err.Error()))
@@ -117,13 +104,6 @@ func main() {
 	}
 
 	pass, err = gw2.CheckIn(womanWithDogs)
-	if err != nil {
-		log.Println(fmt.Sprintf("Checkin error: %s", err.Error()))
-	} else {
-		log.Println(fmt.Sprintf("Welcome to board with pass: %s", pass.ID))
-	}
-
-	pass, err = ot.CheckIn(womanWithDogs)
 	if err != nil {
 		log.Println(fmt.Sprintf("Checkin error: %s", err.Error()))
 	} else {

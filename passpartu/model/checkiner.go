@@ -69,15 +69,6 @@ func CheckInPassenger(passenger Passenger) (*Pass, error) {
 }
 
 func CheckInPassangerWithAnimal(passenger Passenger) (*Pass, error) {
-
-	pets := passenger.GetTicket().Pets
-
-	for _, pet := range pets {
-		if pet.Passport == nil || pet.OwnershipCertificate == nil || (pet.SafetyCertificate == nil && pet.Weight >= 40) {
-			return nil, fmt.Errorf("animal has problems with docs or weight")
-		}
-	}
-
 	return checkin(passenger)
 }
 
@@ -91,10 +82,4 @@ type Detka struct{}
 
 func (d *Detka) CheckIn(passenger Passenger) (*Pass, error) {
 	return CheckInPassangerWithAnimal(passenger)
-}
-
-type OnlineOperator struct{}
-
-func (d *OnlineOperator) CheckIn(passenger Passenger) (*Pass, error) {
-	return CheckInPassenger(passenger)
 }
