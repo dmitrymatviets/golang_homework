@@ -118,4 +118,13 @@ func main() {
 		log.Println(fmt.Sprintf("Welcome to board with pass: %s", pass.ID))
 	}
 
+	womanWithDogs.Ticket.Pets[0].SafetyCertificate = nil
+	womanWithDogs.Ticket.Pets[0].Weight = 50
+	pass, err = gw2.CheckIn(womanWithDogs)
+	if err != nil {
+		log.Println(fmt.Sprintf("Checkin error: %s", err.Error()))
+	} else {
+		log.Println(fmt.Sprintf("Welcome to board with pass: %s", pass.ID))
+	}
+
 }
