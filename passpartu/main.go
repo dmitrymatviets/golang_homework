@@ -11,18 +11,27 @@ const (
 	GatewayA = "A"
 	// "detka"
 	GatewayB = "B"
+	GatewayX = "X"
 )
 
 func main() {
 
+	passRegistry := &model.InMemoryPassRegistry{make(map[string]string)}
+
 	b1 := &model.Budka{}
 	b2 := &model.Budka{}
+	b3 := &model.Budka{}
+
 	b1.Register(&model.Babka{})
 	b2.Register(&model.Detka{})
+	b3.Register(&model.SkynetCheckiner{passRegistry})
+
+	gosUslugiApi := &model.GosuslugiApi{passRegistry}
 
 	eais := model.NewEAISPC()
 	eais.RegisterBudka(b1, GatewayA)
 	eais.RegisterBudka(b2, GatewayB)
+	eais.RegisterBudka(b3, GatewayX)
 
 	//@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@//
 
@@ -78,6 +87,7 @@ func main() {
 
 	gw1 := eais.Budkas[GatewayA]
 	gw2 := eais.Budkas[GatewayB]
+	gw3 := eais.Budkas[GatewayX]
 
 	pass, err := gw1.CheckIn(lonelyMan)
 	if err != nil {
@@ -121,6 +131,21 @@ func main() {
 	womanWithDogs.Ticket.Pets[0].SafetyCertificate = nil
 	womanWithDogs.Ticket.Pets[0].Weight = 50
 	pass, err = gw2.CheckIn(womanWithDogs)
+	if err != nil {
+		log.Println(fmt.Sprintf("Checkin error: %s", err.Error()))
+	} else {
+		log.Println(fmt.Sprintf("Welcome to board with pass: %s", pass.ID))
+	}
+
+	pass, err = gw3.CheckIn(lonelyMan)
+	if err != nil {
+		log.Println(fmt.Sprintf("Checkin error: %s", err.Error()))
+	} else {
+		log.Println(fmt.Sprintf("Welcome to board with pass: %s", pass.ID))
+	}
+
+	gosUslugiApi.RegisterPassenger(lonelyMan)
+	pass, err = gw3.CheckIn(lonelyMan)
 	if err != nil {
 		log.Println(fmt.Sprintf("Checkin error: %s", err.Error()))
 	} else {

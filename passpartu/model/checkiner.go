@@ -5,7 +5,22 @@ import (
 	"time"
 )
 
-var passRegistry = make(map[string]string)
+type PassRegistry interface {
+	GetTicketId(pass *Pass) string
+	SetPass(pass *Pass, ticketId string)
+}
+
+type InMemoryPassRegistry struct {
+	PassRegistry map[string]string
+}
+
+func (registry *InMemoryPassRegistry) GetTicketId(pass *Pass) string {
+	return registry.PassRegistry[pass.ID]
+}
+
+func (registry *InMemoryPassRegistry) SetPass(pass *Pass, ticketId string) {
+	registry.PassRegistry[pass.ID] = ticketId
+}
 
 type CheckIner interface {
 	CheckIn(passenger Passenger) (*Pass, error)
@@ -97,16 +112,18 @@ func (d *Detka) CheckIn(passenger Passenger) (*Pass, error) {
 	return CheckInPassangerWithAnimal(passenger)
 }
 
-type NanoBudka struct{}
+type SkynetCheckiner struct {
+	PassRegistry PassRegistry
+}
 
-func (d *NanoBudka) CheckIn(passenger Passenger) (*Pass, error) {
+func (d *SkynetCheckiner) CheckIn(passenger Passenger) (*Pass, error) {
 	pass := passenger.GetPass()
 
 	if pass == nil {
 		return nil, fmt.Errorf("No electonic pass")
 	}
 
-	if passRegistry[pass.ID] != passenger.GetTicket().ID {
+	if d.PassRegistry.GetTicketId(pass) != passenger.GetTicket().ID {
 		return nil, fmt.Errorf("Fake electonic pass")
 	}
 
@@ -114,4 +131,20 @@ func (d *NanoBudka) CheckIn(passenger Passenger) (*Pass, error) {
 }
 
 type GosuslugiApi struct {
+	PassRegistry PassRegistry
+}
+
+func (gosUslugi *GosuslugiApi) RegisterPassenger(passenger Passenger) (*Pass, error) {
+	if passenger.GetTicket().Pets != nil || len(passenger.GetTicket().Pets) > 0 {
+		return nil, fmt.Errorf("animal checkin not allowed")
+	}
+
+	pass, err := checkin(passenger)
+
+	if pass != nil {
+		gosUslugi.PassRegistry.SetPass(pass, passenger.GetTicket().ID)
+		passenger.SetPass(pass)
+	}
+
+	return pass, err
 }

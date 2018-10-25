@@ -4,6 +4,7 @@ type Passenger interface {
 	GetDocuments() []interface{}
 	GetTicket() *Ticket
 	GetPass() *Pass
+	SetPass(p *Pass)
 }
 
 type ETicketHolder struct {
@@ -12,6 +13,9 @@ type ETicketHolder struct {
 
 func (me *ETicketHolder) GetPass() *Pass {
 	return me.Pass
+}
+func (me *ETicketHolder) SetPass(p *Pass) {
+	me.Pass = p
 }
 
 type American struct {
