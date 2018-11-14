@@ -3,6 +3,7 @@ package common
 import (
 	"fmt"
 	"strings"
+	"sync"
 )
 
 type Command struct {
@@ -21,4 +22,9 @@ func ParseCommand(s string) (*Command, error) {
 type CommandHandler interface {
 	HandleCommand(command *Command) string
 	CanHandle(command *Command) bool
+}
+
+type Cache struct {
+	sync.RWMutex
+	Items map[string]string
 }

@@ -6,18 +6,17 @@ import (
 	"golang_homework/memcache/common"
 	"golang_homework/memcache/handlers"
 	"net"
-	"sync"
 )
 
-var cache = sync.Map{}
+var cache = &common.Cache{Items: map[string]string{}}
 
 var supportedHandlers = []common.CommandHandler{
-	&handlers.SetCommandHandler{&cache},
-	&handlers.GetCommandHandler{&cache},
-	&handlers.DelCommandHandler{&cache, sync.Mutex{}},
-	&handlers.ExistsCommandHandler{&cache},
-	&handlers.IncrbyCommandHandler{&cache, sync.Mutex{}},
-	&handlers.DecrbyCommandHandler{&cache, sync.Mutex{}},
+	&handlers.SetCommandHandler{Cache: cache},
+	&handlers.GetCommandHandler{Cache: cache},
+	&handlers.DelCommandHandler{Cache: cache},
+	&handlers.ExistsCommandHandler{Cache: cache},
+	&handlers.IncrbyCommandHandler{Cache: cache},
+	&handlers.DecrbyCommandHandler{Cache: cache},
 }
 
 const Port = "9999"

@@ -2,15 +2,16 @@ package handlers
 
 import (
 	"golang_homework/memcache/common"
-	"sync"
 )
 
 type SetCommandHandler struct {
-	Cache *sync.Map
+	Cache *common.Cache
 }
 
 func (handler *SetCommandHandler) HandleCommand(command *common.Command) string {
-	handler.Cache.Store(command.Args[0], command.Args[1])
+	handler.Cache.Lock()
+	defer handler.Cache.Unlock()
+	handler.Cache.Items[command.Args[0]] = command.Args[1]
 	return "OK"
 }
 

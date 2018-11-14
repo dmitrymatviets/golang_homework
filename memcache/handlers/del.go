@@ -2,23 +2,21 @@ package handlers
 
 import (
 	"golang_homework/memcache/common"
-	"sync"
 )
 
 type DelCommandHandler struct {
-	Cache *sync.Map
-	sync.Mutex
+	Cache *common.Cache
 }
 
 func (handler *DelCommandHandler) HandleCommand(command *common.Command) string {
-	handler.Lock()
-	defer handler.Unlock()
+	handler.Cache.Lock()
+	defer handler.Cache.Unlock()
 
-	var val, ok = handler.Cache.Load(command.Args[0])
-	if !ok || (val == nil) {
+	var _, ok = handler.Cache.Items[command.Args[0]]
+	if !ok {
 		return "0"
 	}
-	handler.Cache.Delete(command.Args[0])
+	delete(handler.Cache.Items, command.Args[0])
 	return "1"
 }
 

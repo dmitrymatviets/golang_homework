@@ -4,25 +4,23 @@ import (
 	"fmt"
 	"golang_homework/memcache/common"
 	"strconv"
-	"sync"
 )
 
 type DecrbyCommandHandler struct {
-	Cache *sync.Map
-	sync.Mutex
+	Cache *common.Cache
 }
 
 func (handler *DecrbyCommandHandler) HandleCommand(command *common.Command) string {
-	handler.Lock()
-	defer handler.Unlock()
+	handler.Cache.Lock()
+	defer handler.Cache.Unlock()
 
-	val, ok := handler.Cache.Load(command.Args[0])
+	val, ok := handler.Cache.Items[command.Args[0]]
 
-	if val == nil || !ok {
+	if !ok {
 		return "0"
 	}
 
-	num, err := strconv.Atoi(val.(string))
+	num, err := strconv.Atoi(val)
 
 	if err != nil {
 		return "0"
@@ -31,7 +29,7 @@ func (handler *DecrbyCommandHandler) HandleCommand(command *common.Command) stri
 	num--
 
 	numStr := fmt.Sprintf("%v", num)
-	handler.Cache.Store(command.Args[0], numStr)
+	handler.Cache.Items[command.Args[0]] = numStr
 	return "1\r" + numStr
 }
 
