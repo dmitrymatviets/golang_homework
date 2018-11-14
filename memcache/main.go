@@ -24,8 +24,20 @@ const Port = "9999"
 func main() {
 	ln, _ := net.Listen("tcp", ":"+Port)
 	fmt.Println("Запущено на localhost:" + Port)
-	conn, _ := ln.Accept()
 
+	for {
+		conn, err := ln.Accept()
+		if err != nil {
+			fmt.Println(err.Error())
+			continue
+		}
+		go handleRequest(conn)
+	}
+}
+
+func handleRequest(conn net.Conn) {
+	defer conn.Close()
+	
 	for {
 		message, _ := bufio.NewReader(conn).ReadString('\n')
 		fmt.Println("---")
